@@ -1,11 +1,13 @@
 import { create } from "zustand";
 
-const useChat = create((set) => ({
+const useChat = create((set, get) => ({
   isLoading: false,
   messages: [],
   conversationId: null,
   conversations: [],
   error: null,
+  isAnswering: false,
+  messagesEndRef: { current: null },
 
   setIsLoading: (isLoading) => set({ isLoading }),
   setMessages: (messages) =>
@@ -22,6 +24,8 @@ const useChat = create((set) => ({
           : conversations,
     })),
   setError: (error) => set({ error }),
+  setIsAnswering: (isAnswering) => set({ isAnswering }),
+  setMessagesEndRef: (ref) => set({ messagesEndRef: ref }),
 }));
 
 export default useChat;
