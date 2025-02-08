@@ -13,7 +13,6 @@ const InputForm = ({ chatId }) => {
     error,
     setError,
     setConversations,
-    messages,
     setIsAnswering,
     messagesEndRef,
     isAnswering,
@@ -21,7 +20,6 @@ const InputForm = ({ chatId }) => {
   const router = useRouter();
   const [input, setInput] = useState("");
   const inputRef = useRef(null);
-  const [isCreatingChat, setIsCreatingChat] = useState(false);
 
   const createConversation = useCreateConversation();
   const sendMessage = useSendMessage();
@@ -34,27 +32,18 @@ const InputForm = ({ chatId }) => {
   }, [conversationId, isAnswering]);
 
   const createAndRedirectToChat = async (title) => {
-    if (!conversationId) {
-      setIsCreatingChat(true);
+    if (!chatId) {
       try {
         const data = await createConversation.mutateAsync(title);
         setConversationId(data.id);
-        setConversations((prev) => {
-          const prevArray = Array.isArray(prev) ? prev : [];
-          return [
-            {
-              id: data.id,
-              title: title.slice(0, 20),
-              created_at: new Date(),
-            },
-            ...prevArray,
-          ];
-        });
         router.replace(`/chat/${data.id}`);
         return data.id;
-      } finally {
-        setIsCreatingChat(false);
+      } catch (error) {
+        console.error("Error:", error);
+        setError("Something went wrong. Try to reload the page.");
       }
+    } else {
+      return chatId;
     }
   };
 
@@ -64,6 +53,7 @@ const InputForm = ({ chatId }) => {
 
     const userMessage = input.replace(/\r\n/g, "\n");
     const convId = await createAndRedirectToChat(userMessage);
+    console.log(convId);
 
     setIsLoading(true);
     setIsAnswering(true);
@@ -175,7 +165,7 @@ const InputForm = ({ chatId }) => {
   };
 
   return (
-    <div className='p-4 border rounded-2xl border-gray-800 max-w-3xl mb-2 w-full mx-auto'>
+    <div className='p-4 border md:rounded-2xl border-gray-800 max-w-3xl md:mb-2 w-full mx-auto'>
       <form onSubmit={handleSubmit} className='flex gap-2'>
         <textarea
           ref={inputRef}

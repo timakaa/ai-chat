@@ -7,13 +7,16 @@ import { useConversations } from "@/hooks/chat.hooks";
 const Sidebar = ({ chatId }) => {
   const currentConversationRef = useRef(null);
   const containerRef = useRef(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(
-    localStorage.getItem("isSidebarOpen")
-      ? +JSON.parse(localStorage.getItem("isSidebarOpen")) === 1
-      : true,
-  );
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const { data: conversations = [], isError } = useConversations();
+
+  useEffect(() => {
+    const savedState = localStorage.getItem("isSidebarOpen");
+    if (savedState !== null) {
+      setIsSidebarOpen(+JSON.parse(savedState) === 1);
+    }
+  }, []);
 
   useEffect(() => {
     if (chatId && currentConversationRef.current && containerRef.current) {
@@ -40,13 +43,13 @@ const Sidebar = ({ chatId }) => {
   return (
     <div
       className={`bg-[#111111] duration-150 hidden md:flex pt-4 flex-col ${
-        isSidebarOpen ? "w-96" : "w-16"
+        isSidebarOpen ? "w-72" : "w-16"
       }`}
     >
       {isSidebarOpen ? (
         <>
           <div className='flex px-4 justify-between text-2xl font-bold'>
-            <div>APHOS AI</div>
+            <div>Tima AI</div>
             <div>
               <button
                 className='hover:bg-gray-600/50 p-1 duration-100 cursor-pointer rounded-lg'
