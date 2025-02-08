@@ -128,7 +128,13 @@ const Sidebar = () => {
             </button>
           </div>
           <div className='flex items-center justify-center'>
-            <button className='hover:bg-gray-600/50 p-1 duration-100 cursor-pointer rounded-lg'>
+            <button
+              onClick={() => {
+                setMessages([]);
+                setConversationId(null);
+              }}
+              className='hover:bg-gray-600/50 p-1 duration-100 cursor-pointer rounded-lg'
+            >
               <MessageCirclePlus />
             </button>
           </div>

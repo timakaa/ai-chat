@@ -15,18 +15,22 @@ const InputForm = () => {
     messages,
     setIsAnswering,
     messagesEndRef,
+    isAnswering,
   } = useChat();
   const [input, setInput] = useState("");
   const inputRef = useRef(null);
 
   // Add useEffect to update the ref in store when component mounts
   useEffect(() => {
-    inputRef.current.focus();
-  }, [conversationId]);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [conversationId, isAnswering]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
+    if (isAnswering) return;
 
     messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
 
@@ -190,14 +194,13 @@ const InputForm = () => {
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           placeholder='Type your message...'
-          className='resize-none p-3 rounded-lg w-full bg-[#222222] text-white focus:outline-none min-h-[40px] h-auto max-h-[200px] overflow-y-auto align-bottom whitespace-pre font-mono'
+          className='resize-none p-3 rounded-lg w-full bg-[#222222] text-white focus:outline-none min-h-[40px] h-auto max-h-[200px] overflow-y-auto align-bottom whitespace-pre'
           style={{ tabSize: 4 }}
-          disabled={isLoading}
           rows={1}
         />
         <button
           type='submit'
-          disabled={isLoading || input.trim() === "" || error}
+          disabled={isAnswering || input.trim() === "" || error}
           className='px-4 py-2 bg-[#333] rounded-lg hover:bg-[#222] cursor-pointer duration-150 disabled:opacity-50'
         >
           <SendHorizontal />
