@@ -13,7 +13,9 @@ const useChat = create((set, get) => ({
   setMessages: (messages) =>
     set((state) => ({
       messages:
-        typeof messages === "function" ? messages(state.messages) : messages,
+        typeof messages === "function"
+          ? messages(state.messages || [])
+          : messages,
     })),
   setConversationId: (conversationId) => set({ conversationId }),
   setConversations: (conversations) =>

@@ -112,6 +112,16 @@ async def get_conversations():
     return conversation_repo.get_conversations()
 
 
+class CreateConversationRequest(BaseModel):
+    title: Optional[str] = "New Conversation"
+
+
+@app.post("/conversations")
+async def create_conversation(request: CreateConversationRequest):
+    conversation_id = conversation_repo.create_conversation(request.title[:20])
+    return JSONResponse(content={"id": conversation_id})
+
+
 @app.get("/conversations/{conversation_id}")
 async def get_conversation(conversation_id: int):
     return conversation_repo.get_conversation(conversation_id)

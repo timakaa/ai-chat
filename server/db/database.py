@@ -8,11 +8,13 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime, UTC
-from typing import List, Dict
+from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
+
+# Import models here to ensure they are registered with Base
+from db.models.Conversation import Conversation
+from db.models.Message import Message
 
 
 class Database:

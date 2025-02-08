@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect } from "react";
 import useChat from "@/store/chat.store";
 import { SendHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCreateConversation, useSendMessage } from "@/hooks/chat.hooks";
 
-const InputForm = () => {
+const InputForm = ({ chatId }) => {
   const {
-    isLoading,
     setMessages,
     setIsLoading,
     conversationId,
@@ -17,8 +18,13 @@ const InputForm = () => {
     messagesEndRef,
     isAnswering,
   } = useChat();
+  const router = useRouter();
   const [input, setInput] = useState("");
   const inputRef = useRef(null);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+
+  const createConversation = useCreateConversation();
+  const sendMessage = useSendMessage();
 
   // Add useEffect to update the ref in store when component mounts
   useEffect(() => {
@@ -27,95 +33,79 @@ const InputForm = () => {
     }
   }, [conversationId, isAnswering]);
 
+  const createAndRedirectToChat = async (title) => {
+    if (!conversationId) {
+      setIsCreatingChat(true);
+      try {
+        const data = await createConversation.mutateAsync(title);
+        setConversationId(data.id);
+        setConversations((prev) => {
+          const prevArray = Array.isArray(prev) ? prev : [];
+          return [
+            {
+              id: data.id,
+              title: title.slice(0, 20),
+              created_at: new Date(),
+            },
+            ...prevArray,
+          ];
+        });
+        router.replace(`/chat/${data.id}`);
+        return data.id;
+      } finally {
+        setIsCreatingChat(false);
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    if (isAnswering) return;
+    if (!input.trim() || isAnswering || createConversation.isPending) return;
 
-    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    const userMessage = input.replace(/\r\n/g, "\n");
+    const convId = await createAndRedirectToChat(userMessage);
 
     setIsLoading(true);
     setIsAnswering(true);
-    const userMessage = input.replace(/\r\n/g, "\n");
     setInput("");
 
-    // Reset textarea height
     if (inputRef.current) {
       inputRef.current.style.height = "48px";
     }
 
-    // Add user message immediately
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: userMessage,
-          conversation_id: conversationId,
-        }),
+      const response = await sendMessage.mutateAsync({
+        prompt: userMessage,
+        conversation_id: convId,
       });
-      setIsLoading(false);
 
       if (!response.ok) {
-        setError("Something went wrong. Try to reload the page.");
-        return;
+        throw new Error("Failed to send message");
       }
 
+      setIsLoading(false);
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
-
       const reader = response.body.getReader();
       let fullAssistantMessage = "";
-      let isConversationIdSet = false;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const chunk = new TextDecoder().decode(value);
         const lines = chunk.split("\n");
+
         for (const line of lines) {
           if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (
-                data.conversation_id &&
-                !conversationId &&
-                !isConversationIdSet
-              ) {
-                isConversationIdSet = true;
-                const newConversationId = data.conversation_id;
-                setConversationId(newConversationId);
-                if (messages.length <= 2) {
-                  setConversations((prev) => {
-                    const prevArray = Array.isArray(prev) ? prev : [];
-                    return [
-                      {
-                        id: newConversationId,
-                        title: userMessage.slice(0, 20),
-                        created_at: new Date(),
-                      },
-                      ...prevArray,
-                    ];
-                  });
-                }
-              }
-
-              if (data.text) {
-                fullAssistantMessage += data.text;
-
-                setMessages((prev) => [
-                  ...prev.slice(0, -1),
-                  { role: "assistant", content: fullAssistantMessage },
-                ]);
-              }
-            } catch (e) {
-              console.error("Error parsing SSE data:", e);
-              setError("Something went wrong. Try to reload the page.");
+            const data = JSON.parse(line.slice(6));
+            if (data.text) {
+              fullAssistantMessage += data.text;
+              setMessages((prev) => [
+                ...prev.slice(0, -1),
+                { role: "assistant", content: fullAssistantMessage },
+              ]);
             }
           }
         }
@@ -185,7 +175,7 @@ const InputForm = () => {
   };
 
   return (
-    <div className='p-4 border rounded-3xl border-gray-800 max-w-3xl mb-2 w-full mx-auto'>
+    <div className='p-4 border rounded-2xl border-gray-800 max-w-3xl mb-2 w-full mx-auto'>
       <form onSubmit={handleSubmit} className='flex gap-2'>
         <textarea
           ref={inputRef}

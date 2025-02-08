@@ -1,54 +1,37 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import useChat from "@/store/chat.store";
+import React, { useState, useRef, useEffect } from "react";
 import { PanelRightOpen, PanelLeftOpen, MessageCirclePlus } from "lucide-react";
+import Link from "next/link";
+import { useConversations } from "@/hooks/chat.hooks";
 
-const Sidebar = () => {
-  const {
-    conversations,
-    setConversations,
-    setMessages,
-    setConversationId,
-    conversationId,
-  } = useChat();
+const Sidebar = ({ chatId }) => {
+  const currentConversationRef = useRef(null);
+  const containerRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(
     localStorage.getItem("isSidebarOpen")
       ? +JSON.parse(localStorage.getItem("isSidebarOpen")) === 1
       : true,
   );
 
-  // Fetch conversations on mount
+  const { data: conversations = [], isError } = useConversations();
+
   useEffect(() => {
-    fetchConversations();
-  }, []);
+    if (chatId && currentConversationRef.current && containerRef.current) {
+      setTimeout(() => {
+        const targetPosition =
+          currentConversationRef.current.offsetTop -
+          containerRef.current.offsetTop -
+          20;
 
-  const fetchConversations = async () => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/conversations`,
-      );
-      const data = await response.json();
-      // Ensure we always set an array
-      setConversations(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error fetching conversations:", error);
-      setConversations([]); // Set empty array on error
+        containerRef.current.scrollTo({
+          top: targetPosition,
+          behavior: "smooth",
+        });
+      }, 100);
     }
-  };
+  }, [chatId, conversations]);
 
-  const loadConversation = async (id) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/conversations/${id}`,
-      );
-      const messages = await response.json();
-      setMessages(messages);
-      setConversationId(id);
-    } catch (error) {
-      console.error("Error loading conversation:", error);
-    }
-  };
-
+  // Update global state when conversations change
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
     localStorage.setItem("isSidebarOpen", String(!isSidebarOpen));
@@ -74,26 +57,27 @@ const Sidebar = () => {
             </div>
           </div>
           <div className='p-4 border-b border-gray-700'>
-            <button
-              onClick={() => {
-                setMessages([]);
-                setConversationId(null);
-              }}
+            <Link
+              href='/chat'
               className='px-4 py-2 font-bold w-1/2 duration-150 bg-blue-500 text-white rounded-lg hover:bg-blue-600'
             >
               New Chat +
-            </button>
+            </Link>
           </div>
-          <div className='flex-1 overflow-y-auto p-4'>
-            {(Array.isArray(conversations) ? conversations : [])?.map(
-              (conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => loadConversation(conv.id)}
-                  className={`p-3 hover:bg-[#222222] cursor-pointer rounded-xl ${
-                    conv.id === conversationId
-                      ? "bg-[#333] hover:bg-[#333]"
-                      : ""
+          <div data-chat-container className='flex-1 overflow-y-auto p-4'>
+            {isError ? (
+              <div className='text-red-500 p-3'>
+                Failed to load conversations
+              </div>
+            ) : (
+              conversations?.map((conv, i) => (
+                <Link
+                  href={`/chat/${conv.id}`}
+                  key={i}
+                  data-chat-id={conv.id}
+                  ref={conv.id === chatId ? currentConversationRef : null}
+                  className={`p-3 hover:bg-[#222222] block cursor-pointer rounded-xl ${
+                    conv.id == chatId ? "bg-[#333] hover:bg-[#333]" : ""
                   }`}
                 >
                   <div className='text-xs text-gray-400'>
@@ -112,8 +96,8 @@ const Sidebar = () => {
                         : conv.title
                     }` || "New Conversation"}
                   </div>
-                </div>
-              ),
+                </Link>
+              ))
             )}
           </div>
         </>
@@ -128,15 +112,12 @@ const Sidebar = () => {
             </button>
           </div>
           <div className='flex items-center justify-center'>
-            <button
-              onClick={() => {
-                setMessages([]);
-                setConversationId(null);
-              }}
+            <Link
+              href='/chat'
               className='hover:bg-gray-600/50 p-1 duration-100 cursor-pointer rounded-lg'
             >
               <MessageCirclePlus />
-            </button>
+            </Link>
           </div>
         </div>
       )}
