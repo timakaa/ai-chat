@@ -8,6 +8,10 @@ import json
 from db.database import db
 from db.repositories.conversation import ConversationRepository
 from db.repositories.message import MessageRepository
+import os
+import dotenv
+
+dotenv.load_dotenv()
 
 app = FastAPI()
 
@@ -49,7 +53,11 @@ async def generate_stream(prompt: str, messages: List[dict]):
         print(f"Full prompt with context:\n{full_prompt}")  # Debug log
 
         # Create HTTP client for Ollama API
-        data = {"model": "deepseek-r1:7b", "prompt": full_prompt, "stream": True}
+        data = {
+            "model": os.getenv("AI_MODEL"),
+            "prompt": full_prompt,
+            "stream": True,
+        }
 
         # Send request to Ollama
         async with client.stream("POST", OLLAMA_API_URL, json=data) as response:
