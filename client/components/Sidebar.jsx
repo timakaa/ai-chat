@@ -1,22 +1,25 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
-import { PanelRightOpen, PanelLeftOpen, MessageCirclePlus } from "lucide-react";
+import {
+  PanelRightOpen,
+  PanelLeftOpen,
+  MessageCirclePlus,
+  Ellipsis,
+} from "lucide-react";
 import Link from "next/link";
 import { useConversations } from "@/hooks/chat.hooks";
+import ConversationItem from "./ui/ConversationItem";
 
 const Sidebar = ({ chatId }) => {
   const currentConversationRef = useRef(null);
   const containerRef = useRef(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(
+    localStorage.getItem("isSidebarOpen")
+      ? localStorage.getItem("isSidebarOpen") === "true"
+      : true,
+  );
 
   const { data: conversations = [], isError } = useConversations();
-
-  useEffect(() => {
-    const savedState = localStorage.getItem("isSidebarOpen");
-    if (savedState !== null) {
-      setIsSidebarOpen(+JSON.parse(savedState) === 1);
-    }
-  }, []);
 
   useEffect(() => {
     if (chatId && currentConversationRef.current && containerRef.current) {
@@ -74,32 +77,7 @@ const Sidebar = ({ chatId }) => {
               </div>
             ) : (
               conversations?.map((conv, i) => (
-                <Link
-                  href={`/chat/${conv.id}`}
-                  key={i}
-                  data-chat-id={conv.id}
-                  ref={conv.id === chatId ? currentConversationRef : null}
-                  className={`p-3 hover:bg-[#222222] block cursor-pointer rounded-xl ${
-                    conv.id == chatId ? "bg-[#333] hover:bg-[#333]" : ""
-                  }`}
-                >
-                  <div className='text-xs text-gray-400'>
-                    {new Date(conv.created_at).toLocaleString("en-US", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                  <div className='text-gray-300 text-sm truncate'>
-                    {`${
-                      conv?.title?.length >= 20
-                        ? conv.title.slice(0, 20) + "..."
-                        : conv.title
-                    }` || "New Conversation"}
-                  </div>
-                </Link>
+                <ConversationItem key={i} conv={conv} chatId={chatId} />
               ))
             )}
           </div>

@@ -15,7 +15,7 @@ export const useCreateConversation = () => {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries(["conversations"]);
     },
   });
 };
@@ -59,5 +59,24 @@ export const useConversationMessages = (conversationId) => {
       return messages.length > 0 ? messages : [];
     },
     enabled: !!conversationId,
+  });
+};
+
+export const useDeleteConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (conversationId) => {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/conversations/${conversationId}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(["conversations"]);
+    },
   });
 };
